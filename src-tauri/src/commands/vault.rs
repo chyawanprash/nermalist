@@ -45,6 +45,8 @@ pub fn create_vault(
     let payload = VaultPayload {
         name: name.clone(),
         notes: vec![],
+        drive: vec![],
+        projects: vec![],
     };
     let serialized =
         bincode::serialize(&payload).map_err(|e| VaultError::SaveFailed(e.to_string()))?;
@@ -67,6 +69,8 @@ pub fn create_vault(
         kdf_params,
         salt,
         notes: vec![],
+        drive: vec![],
+        projects: vec![],
     });
 
     Ok(info)
@@ -130,6 +134,8 @@ pub fn unlock_vault(
         kdf_params: header.kdf_params,
         salt: header.salt,
         notes: payload.notes,
+        drive: payload.drive,
+        projects: payload.projects,
     });
 
     Ok(info)

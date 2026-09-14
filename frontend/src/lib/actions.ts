@@ -6,10 +6,15 @@
  */
 import { vault } from '$lib/tauri/vault';
 import { notes } from '$lib/tauri/notes';
+import { drive } from '$lib/tauri/drive';
+import { projects } from '$lib/tauri/projects';
 import { appState } from '$lib/stores/app.svelte';
 import { vaultState } from '$lib/stores/vault.svelte';
 import { notesState } from '$lib/stores/notes.svelte';
+import { driveState } from '$lib/stores/drive.svelte';
+import { projectsState } from '$lib/stores/projects.svelte';
 import { uiState } from '$lib/stores/ui.svelte';
+import type { EnvRow } from '$lib/types/project';
 import { recentVaultsState } from '$lib/stores/recentVaults.svelte';
 import type { AppError } from '$lib/types/app';
 import type { CreateVaultInput, UnlockVaultInput, ChangePasswordInput } from '$lib/types/vault';
@@ -28,7 +33,7 @@ export const actions = {
       const info = await vault.create(input);
       vaultState.setUnlocked(info);
       recentVaultsState.touch(info);
-      await this.loadNotes();
+      await this.loadWorkspace();
       appState.goTo('vault-unlocked');
       return true;
     } catch (err) {
@@ -69,7 +74,7 @@ export const actions = {
       const info = await vault.unlock(input);
       vaultState.setUnlocked(info);
       recentVaultsState.touch(info);
-      await this.loadNotes();
+      await this.loadWorkspace();
       appState.goTo('vault-unlocked');
       return true;
     } catch (err) {
@@ -88,6 +93,8 @@ export const actions = {
       handle('lockVault', err);
     }
     notesState.clear();
+    driveState.clear();
+    projectsState.clear();
     vaultState.relock();
     uiState.closeAllOverlays();
     appState.goTo('vault-locked');
@@ -101,6 +108,8 @@ export const actions = {
       handle('closeVault', err);
     }
     notesState.clear();
+    driveState.clear();
+    projectsState.clear();
     vaultState.reset();
     uiState.closeAllOverlays();
     appState.goTo('no-vault');
@@ -144,6 +153,101 @@ export const actions = {
       notesState.setAll(list);
     } catch (err) {
       handle('loadNotes', err);
+    }
+  },
+
+  async loadWorkspace(): Promise<void> {
+    await Promise.all([this.loadNotes(), this.loadDrive(), this.loadProjects()]);
+  },
+
+  async loadDrive(): Promise<void> {
+    try {
+      const entries = await drive.list();
+      driveState.setAll(entries);
+    } catch (err) {
+      handle('loadDrive', err);
+    }
+  },
+
+  async createDriveFolder(name: string): Promise<void> {
+    try {
+      const entry = await drive.createFolder(name, driveState.currentFolderId);
+      driveState.upsert(entry);
+    } catch (err) {
+      handle('createDriveFolder', err);
+    }
+  },
+
+  async uploadDriveFiles(files: FileList | File[]): Promise<void> {
+    for (const file of Array.from(files)) {
+      try {
+        const data = new Uint8Array(await file.arrayBuffer());
+        const entry = await drive.uploadFile(
+          file.name,
+          driveState.currentFolderId,
+          file.type || null,
+          data,
+        );
+        driveState.upsert(entry);
+      } catch (err) {
+        handle('uploadDriveFiles', err);
+      }
+    }
+  },
+
+  async deleteDriveEntry(id: string): Promise<void> {
+    try {
+      await drive.delete(id);
+      driveState.remove(id);
+    } catch (err) {
+      handle('deleteDriveEntry', err);
+    }
+  },
+
+  async downloadDriveFile(id: string, name: string): Promise<void> {
+    const destination = await drive.pickExportDestination(name);
+    if (!destination) return;
+    try {
+      await drive.exportToDisk(id, destination);
+    } catch (err) {
+      handle('downloadDriveFile', err);
+    }
+  },
+
+  async loadProjects(): Promise<void> {
+    try {
+      const list = await projects.list();
+      projectsState.setAll(list);
+    } catch (err) {
+      handle('loadProjects', err);
+    }
+  },
+
+  async createProject(name: string): Promise<void> {
+    try {
+      const project = await projects.create(name);
+      projectsState.upsert(project);
+      projectsState.select(project.id);
+    } catch (err) {
+      handle('createProject', err);
+    }
+  },
+
+  async deleteProject(id: string): Promise<void> {
+    try {
+      await projects.delete(id);
+      projectsState.remove(id);
+    } catch (err) {
+      handle('deleteProject', err);
+    }
+  },
+
+  async saveProjectEnvRows(id: string, rows: EnvRow[]): Promise<void> {
+    try {
+      const project = await projects.updateEnvRows(id, rows);
+      projectsState.upsert(project);
+    } catch (err) {
+      handle('saveProjectEnvRows', err);
     }
   },
 

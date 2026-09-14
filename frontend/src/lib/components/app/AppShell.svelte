@@ -15,6 +15,8 @@
   import NoteContextMenu from '$lib/components/notes/NoteContextMenu.svelte';
   import DeleteNotesBulkDialog from '$lib/components/notes/DeleteNotesBulkDialog.svelte';
   import NoteEditor from '$lib/components/editor/NoteEditor.svelte';
+  import DriveFilePreview from '$lib/components/drive/DriveFilePreview.svelte';
+  import EnvTable from '$lib/components/projects/EnvTable.svelte';
   import CreateVaultDialog from '$lib/components/vault/CreateVaultDialog.svelte';
   import ChangePasswordDialog from '$lib/components/vault/ChangePasswordDialog.svelte';
   import SearchDialog from '$lib/components/search/SearchDialog.svelte';
@@ -98,7 +100,13 @@
           <Sidebar />
         {/if}
         <main class="min-w-0 flex-1">
-          <NoteEditor />
+          {#if uiState.mainView === 'drive'}
+            <DriveFilePreview />
+          {:else if uiState.mainView === 'projects'}
+            <EnvTable />
+          {:else}
+            <NoteEditor />
+          {/if}
         </main>
       </div>
     </div>

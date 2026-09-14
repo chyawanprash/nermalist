@@ -1,12 +1,18 @@
 use serde::{Deserialize, Serialize};
 
+use super::drive::DriveEntry;
 use super::note::Note;
+use super::project::Project;
 
 /// The plaintext payload stored inside the encrypted vault file.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct VaultPayload {
     pub name: String,
     pub notes: Vec<Note>,
+    #[serde(default)]
+    pub drive: Vec<DriveEntry>,
+    #[serde(default)]
+    pub projects: Vec<Project>,
 }
 
 /// Returned to the frontend for a vault that has been opened but not yet unlocked.

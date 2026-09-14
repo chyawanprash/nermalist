@@ -28,8 +28,12 @@ export interface NoteContextMenuState {
   y: number;
 }
 
+/** Which section of the sidebar/main pane is showing. */
+export type MainView = 'notes' | 'drive' | 'projects';
+
 class UiState {
   sidebarOpen = $state(true);
+  mainView = $state<MainView>('notes');
   searchOpen = $state(false);
   commandPaletteOpen = $state(false);
   activeDialog = $state<DialogName>(null);

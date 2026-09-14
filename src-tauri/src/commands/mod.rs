@@ -1,4 +1,6 @@
+pub mod drive;
 pub mod notes;
+pub mod projects;
 pub mod vault;
 
 use crate::models::vault::VaultPayload;
@@ -23,6 +25,10 @@ pub enum VaultError {
     NoVaultOpen,
     #[error("note not found: {0}")]
     NoteNotFound(String),
+    #[error("drive entry not found: {0}")]
+    DriveEntryNotFound(String),
+    #[error("project not found: {0}")]
+    ProjectNotFound(String),
     #[error("password must be at least {MIN_PASSWORD_LENGTH} characters")]
     PasswordTooShort,
     #[error("password must be at most {MAX_PASSWORD_LENGTH} characters")]
@@ -51,6 +57,8 @@ pub(crate) fn persist(vault: &crate::OpenVault) -> Result<(), VaultError> {
     let payload = VaultPayload {
         name: vault.name.clone(),
         notes: vault.notes.clone(),
+        drive: vault.drive.clone(),
+        projects: vault.projects.clone(),
     };
     let serialized =
         bincode::serialize(&payload).map_err(|e| VaultError::SaveFailed(e.to_string()))?;
